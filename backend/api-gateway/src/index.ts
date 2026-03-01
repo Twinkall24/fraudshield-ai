@@ -84,7 +84,7 @@ console.log(`Serving frontend from: ${frontendBuildPath}`);
 
 app.use(express.static(frontendBuildPath));
 
-app.get('*', (req, res) => {
+app.get('/{*path}', (req, res) => {
   res.sendFile(path.join(frontendBuildPath, "index.html"));
 });
 
