@@ -12,6 +12,8 @@ import { WebSocketService } from './websocket';
 import pool from './config/database';
 import redisClient from './config/redis';
 
+import path from "path";
+
 dotenv.config();
 
 const app = express();
@@ -39,6 +41,12 @@ app.use('/api', limiter);
 
 // Routes
 app.use('/api', routes);
+
+app.use(express.static(path.join(process.cwd(), "public")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(process.cwd(), "public", "index.html"));
+});
 
 // Initialize WebSocket
 const wsService = new WebSocketService(server);
