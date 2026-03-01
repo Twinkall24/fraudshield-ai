@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL;
+const API_URL = process.env.REACT_APP_API_URL?.startsWith('http')
+  ? process.env.REACT_APP_API_URL
+  : (typeof window !== 'undefined' ? `${window.location.origin}/api` : '/api');
 
 // Create axios instance
 const api = axios.create({
