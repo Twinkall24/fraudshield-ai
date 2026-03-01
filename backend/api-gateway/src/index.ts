@@ -1,0 +1,82 @@
+import express from 'express';
+import http from 'http';
+import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import morgan from 'morgan';
+import dotenv from 'dotenv';
+import rateLimit from 'express-rate-limit';
+
+import routes from './routes';
+import { WebSocketService } from './websocket';
+import pool from './config/database';
+import redisClient from './config/redis';
+
+dotenv.config();
+
+const app = express();
+const server = http.createServer(app);
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(helmet());
+app.use(compression());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  credentials: true,
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan('dev'));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000'),
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
+  message: 'Too many requests from this IP',
+});
+app.use('/api', limiter);
+
+// Routes
+app.use('/api', routes);
+
+// Initialize WebSocket
+const wsService = new WebSocketService(server);
+
+// Error handling
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error:', err);
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal server error',
+  });
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  
+  server.close(() => {
+    console.log('HTTP server closed');
+  });
+
+  await pool.end();
+  await redisClient.quit();
+  
+  process.exit(0);
+});
+
+// Start server
+server.listen(PORT, () => {
+  console.log(`
+    🚀 Fraud Detection API Gateway
+    ================================
+    Environment: ${process.env.NODE_ENV}
+    Port: ${PORT}
+    Database: Connected
+    Redis: Connected
+    WebSocket: Ready
+    ================================
+  `);
+});
+
+export { wsService };
