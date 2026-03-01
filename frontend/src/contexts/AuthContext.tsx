@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -38,6 +39,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const register = async (email: string, password: string) => {
+    try {
+      // New self-service accounts should default to a low-privilege viewer role.
+      const data = await authAPI.register(email, password, 'viewer');
+      setUser(data.user);
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const logout = () => {
     authAPI.logout();
     setUser(null);
@@ -47,6 +58,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     loading,
     login,
+    register,
     logout,
     isAuthenticated: !!user,
   };

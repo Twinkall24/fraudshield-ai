@@ -66,48 +66,14 @@ const LoginParticles: React.FC = () => {
   );
 };
 
-const DemoAccountButton: React.FC<{
-  label: string;
-  email: string;
-  role: string;
-  color: string;
-  onClick: () => void;
-  disabled: boolean;
-}> = ({ label, email, role, color, onClick, disabled }) => (
-  <Box
-    onClick={!disabled ? onClick : undefined}
-    sx={{
-      p: 1.5,
-      borderRadius: 1.5,
-      border: `1px solid ${color}22`,
-      cursor: disabled ? 'not-allowed' : 'pointer',
-      opacity: disabled ? 0.5 : 1,
-      transition: 'all 0.25s ease',
-      '&:hover': !disabled
-        ? {
-          background: `${color}0d`,
-          border: `1px solid ${color}44`,
-          transform: 'translateX(4px)',
-        }
-        : {},
-    }}
-  >
-    <Typography variant="caption" fontWeight={700} sx={{ color, display: 'block' }}>
-      {label}
-    </Typography>
-    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem' }}>
-      {email}
-    </Typography>
-  </Box>
-);
-
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,18 +81,17 @@ export const Login: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      if (isSignUp) {
+        await register(email, password);
+      } else {
+        await login(email, password);
+      }
       navigate('/dashboard');
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDemoLogin = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword('admin123');
   };
 
   return (
@@ -229,11 +194,15 @@ export const Login: React.FC = () => {
             </Box>
 
             <Typography variant="h4" fontWeight={800} sx={{ mb: 0.75, mt: 1 }}>
-              FraudShield
-              <Box component="span" sx={{ color: '#00d4ff' }}>AI</Box>
+              {isSignUp ? 'Create your account' : 'FraudShield'}
+              {!isSignUp && (
+                <Box component="span" sx={{ color: '#00d4ff' }}>AI</Box>
+              )}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Real-Time AI Transaction Monitoring Platform
+              {isSignUp
+                ? 'Sign up for a viewer account to explore the dashboard.'
+                : 'Real-Time AI Transaction Monitoring Platform'}
             </Typography>
           </Box>
 
@@ -260,7 +229,7 @@ export const Login: React.FC = () => {
               margin="normal"
               required
               fullWidth
-              label="Email Address"
+              label="Email address"
               autoComplete="email"
               autoFocus
               value={email}
@@ -278,7 +247,7 @@ export const Login: React.FC = () => {
               fullWidth
               label="Password"
               type="password"
-              autoComplete="current-password"
+              autoComplete={isSignUp ? 'new-password' : 'current-password'}
               value={password}
               onChange={e => setPassword(e.target.value)}
               disabled={loading}
@@ -300,53 +269,39 @@ export const Login: React.FC = () => {
               {loading ? (
                 <Stack direction="row" alignItems="center" spacing={1.5}>
                   <CircularProgress size={18} sx={{ color: 'inherit' }} />
-                  <span>Authenticating...</span>
+                  <span>{isSignUp ? 'Creating account...' : 'Authenticating...'}</span>
                 </Stack>
               ) : (
-                'Sign In to Dashboard'
+                (isSignUp ? 'Create Account' : 'Sign In to Dashboard')
               )}
             </Button>
 
-            {/* Demo Accounts */}
-            <Divider sx={{ my: 2.5, '&::before, &::after': { borderColor: 'rgba(0,212,255,0.1)' } }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={600} letterSpacing={1}>
-                DEMO ACCOUNTS
+            {/* Toggle between sign in and sign up */}
+            <Stack spacing={1.5} sx={{ mb: 2 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                textAlign="center"
+              >
+                {isSignUp
+                  ? 'Already have an account?'
+                  : "Don't have an account yet?"}
               </Typography>
-            </Divider>
-
-            <Stack spacing={1}>
-              <DemoAccountButton
-                label="👑  Admin Account"
-                email="admin@frauddetect.com"
-                role="admin"
-                color="#ff4757"
-                onClick={() => handleDemoLogin('admin@frauddetect.com')}
-                disabled={loading}
-              />
-              <DemoAccountButton
-                label="👨‍💼  Analyst Account"
-                email="analyst@frauddetect.com"
-                role="analyst"
-                color="#00d4ff"
-                onClick={() => handleDemoLogin('analyst@frauddetect.com')}
-                disabled={loading}
-              />
-              <DemoAccountButton
-                label="👤  Test User"
-                email="testuser@example.com — pass: Test123!@#"
-                role="user"
-                color="#7c3aed"
-                onClick={() => handleDemoLogin('testuser@example.com')}
-                disabled={loading}
-              />
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => {
+                  if (loading) return;
+                  setError('');
+                  setIsSignUp(prev => !prev);
+                }}
+                sx={{ borderRadius: 999, textTransform: 'none', fontSize: '0.8rem' }}
+              >
+                {isSignUp ? 'Switch to Sign In' : 'Create a free viewer account'}
+              </Button>
             </Stack>
 
-            <Typography variant="caption" color="text.secondary" display="block" textAlign="center" sx={{ mt: 2 }}>
-              Demo password:{' '}
-              <Box component="code" sx={{ color: '#00d4ff', bgcolor: 'rgba(0,212,255,0.08)', px: 0.75, py: 0.25, borderRadius: 0.5, fontSize: '0.75rem' }}>
-                admin123
-              </Box>
-            </Typography>
           </Box>
         </Box>
 
