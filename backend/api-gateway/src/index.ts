@@ -22,6 +22,8 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3001;
 
+const FRONTEND_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
+
 // Middleware
 app.use(
   helmet({
@@ -36,10 +38,8 @@ app.use(
           "'self'",
           "ws:",
           "wss:",
-          // Allow any HTTPS backend URL in case of split deployments
-          process.env.FRONTEND_URL || "",
-          process.env.API_URL || "",
-        ].filter(Boolean),
+          FRONTEND_ORIGIN,
+        ],
         workerSrc: ["'self'", "blob:"],
         objectSrc: ["'none'"],
         upgradeInsecureRequests: [],
@@ -50,7 +50,7 @@ app.use(
 );
 app.use(compression());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: FRONTEND_ORIGIN,
   credentials: true,
 }));
 app.use(express.json());
@@ -65,13 +65,27 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// Routes
+// API Routes — must come before static file serving
 app.use('/api', routes);
 
-app.use(express.static(path.join(process.cwd(), "public")));
+// Serve React frontend — try multiple common build output paths
+const possibleFrontendPaths = [
+  path.join(process.cwd(), "frontend", "dist"),   // Vite default
+  path.join(process.cwd(), "frontend", "build"),  // CRA default
+  path.join(process.cwd(), "client", "dist"),
+  path.join(process.cwd(), "client", "build"),
+  path.join(process.cwd(), "public"),             // fallback
+];
 
-app.use((req, res) => {
-  res.sendFile(path.join(process.cwd(), "public", "index.html"));
+import fs from 'fs';
+const frontendBuildPath = possibleFrontendPaths.find(p => fs.existsSync(p)) || path.join(process.cwd(), "public");
+
+console.log(`Serving frontend from: ${frontendBuildPath}`);
+
+app.use(express.static(frontendBuildPath));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendBuildPath, "index.html"));
 });
 
 // Initialize WebSocket
@@ -109,6 +123,7 @@ process.on('SIGTERM', async () => {
     ================================
     Environment: ${process.env.NODE_ENV}
     Port: ${PORT}
+    Frontend: ${frontendBuildPath}
     Database: Connected
     Redis: Connected
     WebSocket: Ready
