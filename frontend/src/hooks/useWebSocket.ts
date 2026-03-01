@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
-const WS_URL = process.env.REACT_APP_WS_URL || 'http://localhost:3001';
+// Use the env var if set, otherwise derive from the current page's origin
+// so it works on any deployed domain without hardcoding localhost
+const WS_URL =
+  process.env.REACT_APP_WS_URL ||
+  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001');
 
 export const useWebSocket = () => {
   const [connected, setConnected] = useState(false);

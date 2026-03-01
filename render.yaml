@@ -8,6 +8,9 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: CORS_ORIGIN
+        # Set this to your frontend's Render URL, e.g. https://fraudshield-frontend.onrender.com
+        sync: false
 
   - type: web
     name: fraudshield-ml
@@ -22,3 +25,9 @@ services:
     rootDir: frontend
     buildCommand: npm install && npm run build
     startCommand: npm run start
+    envVars:
+      # CRA bakes these into the JS bundle at BUILD time — must be here
+      - key: REACT_APP_API_URL
+        value: /api
+      - key: REACT_APP_WS_URL
+        value: ""
