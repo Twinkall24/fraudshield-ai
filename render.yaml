@@ -3,7 +3,7 @@ services:
     name: fraudshield-api
     runtime: node
     rootDir: backend/api-gateway
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci && npm run build
     startCommand: npm run start
     envVars:
       - key: NODE_ENV
@@ -23,7 +23,7 @@ services:
     name: fraudshield-frontend
     runtime: node
     rootDir: frontend
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci && npm run build
     startCommand: npm run start
     envVars:
       # CRA bakes these into the JS bundle at BUILD time — must be here
